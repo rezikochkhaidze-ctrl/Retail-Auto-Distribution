@@ -1,30 +1,32 @@
 import React, { useState } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { Branch, SKURule, StockItem, AllocationResult } from './types';
+import { Branch, SKURule, CategoryRule, StockItem, AllocationResult } from './types';
 import { allocateStock } from './lib/allocation';
 
 import { BranchManager } from './components/BranchManager';
 import { SKURuleManager } from './components/SKURuleManager';
+import { CategoryRuleManager } from './components/CategoryRuleManager';
 import { StockIngestion } from './components/StockIngestion';
 import { Dashboard } from './components/Dashboard';
 
-import { LayoutDashboard, Store, PackageSearch, Database, Zap } from 'lucide-react';
+import { LayoutDashboard, Store, PackageSearch, Layers, Database, Zap } from 'lucide-react';
 import { cn } from './lib/utils';
 
-type Tab = 'dashboard' | 'ingestion' | 'branches' | 'rules';
+type Tab = 'dashboard' | 'ingestion' | 'branches' | 'category-rules' | 'rules';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('ingestion');
   
   // Persistent State
   const [branches, setBranches] = useLocalStorage<Branch[]>('sc_branches', []);
+  const [categoryRules, setCategoryRules] = useLocalStorage<CategoryRule[]>('sc_category_rules', []);
   const [skuRules, setSkuRules] = useLocalStorage<SKURule[]>('sc_rules', []);
   
   // Session State
   const [results, setResults] = useState<AllocationResult[]>([]);
 
   const handleRunDistribution = (stockItems: StockItem[]) => {
-    const calculatedResults = allocateStock(stockItems, branches, skuRules);
+    const calculatedResults = allocateStock(stockItems, branches, skuRules, categoryRules);
     setResults(calculatedResults);
     setActiveTab('dashboard');
   };
@@ -33,6 +35,7 @@ export default function App() {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'ingestion', label: 'Central Stock', icon: Database },
     { id: 'branches', label: 'Branches', icon: Store },
+    { id: 'category-rules', label: 'Category Rules', icon: Layers },
     { id: 'rules', label: 'SKU Rules', icon: PackageSearch },
   ] as const;
 
@@ -116,7 +119,7 @@ export default function App() {
             {activeTab === 'ingestion' && (
               <StockIngestion 
                 onRunDistribution={handleRunDistribution} 
-                hasRules={skuRules.length > 0}
+                hasRules={skuRules.length > 0 || categoryRules.length > 0}
                 hasBranches={branches.length > 0}
                 branches={branches}
               />
@@ -124,6 +127,10 @@ export default function App() {
             
             {activeTab === 'branches' && (
               <BranchManager branches={branches} setBranches={setBranches} />
+            )}
+
+            {activeTab === 'category-rules' && (
+              <CategoryRuleManager branches={branches} categoryRules={categoryRules} setCategoryRules={setCategoryRules} />
             )}
             
             {activeTab === 'rules' && (

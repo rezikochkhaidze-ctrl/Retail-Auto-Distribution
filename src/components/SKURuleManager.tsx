@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Branch, SKURule } from '../types';
-import { Plus, Trash2, PackageSearch, Save } from 'lucide-react';
+import { Plus, Trash2, PackageSearch, Save, Upload } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { parseSKURulesExcel } from '../lib/excel';
 
 interface Props {
   branches: Branch[];
@@ -11,6 +12,7 @@ interface Props {
 
 export function SKURuleManager({ branches, skuRules, setSkuRules }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form State
   const [sku, setSku] = useState('');
@@ -74,6 +76,24 @@ export function SKURuleManager({ branches, skuRules, setSkuRules }: Props) {
     setSkuRules(skuRules.filter(r => r.id !== id));
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const newRules = await parseSKURulesExcel(file, branches);
+      // Merge with existing, overwrite on matching SKU
+      const existingMap = new Map(skuRules.map(r => [r.sku, r]));
+      newRules.forEach(nr => {
+        existingMap.set(nr.sku, nr);
+      });
+      setSkuRules(Array.from(existingMap.values()));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to parse SKU Rules. Please check the Excel format.");
+    }
+    if (e.target) e.target.value = '';
+  };
+
   if (branches.length === 0) {
     return (
       <div className="bg-[#1a1d23] p-8 rounded border border-slate-800 text-center max-w-4xl mx-auto mt-10">
@@ -93,13 +113,29 @@ export function SKURuleManager({ branches, skuRules, setSkuRules }: Props) {
           <p className="text-xs text-slate-400">Define ideal inventory levels for each product per store.</p>
         </div>
         {!editingId && (
-          <button
-            onClick={startNewRule}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition-colors flex items-center gap-2 text-sm"
-          >
-            <Plus size={16} />
-            Add SKU Rule
-          </button>
+          <div className="flex items-center gap-3">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              hidden 
+              accept=".xlsx, .xls, .csv" 
+              onChange={handleFileUpload} 
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-1.5 bg-[#252a33] hover:bg-[#2d333f] border border-slate-700 text-slate-300 font-medium rounded transition-colors flex items-center gap-2 text-sm"
+            >
+              <Upload size={16} />
+              Upload Rules
+            </button>
+            <button
+              onClick={startNewRule}
+              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition-colors flex items-center gap-2 text-sm"
+            >
+              <Plus size={16} />
+              Add SKU Rule
+            </button>
+          </div>
         )}
       </div>
 

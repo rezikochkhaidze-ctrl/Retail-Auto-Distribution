@@ -1,7 +1,7 @@
-import { Branch, SKURule, StockItem, AllocationResult } from '../types';
+import { Branch, SKURule, CategoryRule, StockItem, AllocationResult } from '../types';
 
 /**
- * Distributes stock among branches based on SKU rules and store weights.
+ * Distributes stock among branches based on SKU rules, Category rules, and store weights.
  * 
  * Mathematical Logic for Shortage:
  * Let S = central stock, Ti = target for branch i, Wi = weight for branch i.
@@ -19,18 +19,30 @@ import { Branch, SKURule, StockItem, AllocationResult } from '../types';
 export function allocateStock(
   stockItems: StockItem[],
   branches: Branch[],
-  skuRules: SKURule[]
+  skuRules: SKURule[],
+  categoryRules: CategoryRule[] = []
 ): AllocationResult[] {
   const results: AllocationResult[] = [];
 
-  // Create a lookup map for rules by SKU
+  // Create a lookup map for rules by SKU and Category
   const ruleMap = new Map<string, SKURule>();
   skuRules.forEach(rule => {
     ruleMap.set(rule.sku.toUpperCase(), rule);
   });
 
+  const categoryRuleMap = new Map<string, CategoryRule>();
+  categoryRules.forEach(rule => {
+    categoryRuleMap.set(rule.category.toUpperCase(), rule);
+  });
+
   for (const item of stockItems) {
-    const rule = ruleMap.get(item.sku.toUpperCase());
+    let rule: SKURule | CategoryRule | undefined = ruleMap.get(item.sku.toUpperCase());
+    
+    // Fallback to category rule if no specific SKU rule exists
+    if (!rule && item.category) {
+      rule = categoryRuleMap.get(item.category.toUpperCase());
+    }
+
     const centralStock = item.availableQuantity;
 
     if (!rule) {

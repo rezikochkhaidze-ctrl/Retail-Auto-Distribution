@@ -11,8 +11,16 @@ export interface SKURule {
   targets: Record<string, number>; // branchId -> target quantity
 }
 
+export interface CategoryRule {
+  id: string;
+  category: string;
+  description: string;
+  targets: Record<string, number>; // branchId -> target quantity
+}
+
 export interface StockItem {
   sku: string;
+  category?: string;
   description: string;
   availableQuantity: number;
   branchStocks?: Record<string, number>;
