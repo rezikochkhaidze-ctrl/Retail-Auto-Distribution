@@ -1,0 +1,6 @@
+{
+  "name": "Retail Auto-Distributor",
+  "description": "Automated product supply distribution system with Excel ingestion and rule-based allocation algorithms.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
