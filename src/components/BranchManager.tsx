@@ -11,22 +11,36 @@ interface Props {
 export function BranchManager({ branches, setBranches }: Props) {
   const [name, setName] = useState('');
   const [weight, setWeight] = useState<number | string>(1);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    
-    const parsedWeight = Math.max(1, Math.min(10, Number(weight) || 1));
-    
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError('Please enter a store name.');
+      return;
+    }
+    if (branches.some(b => b.name.toLowerCase() === trimmedName.toLowerCase())) {
+      setError(`A branch named "${trimmedName}" already exists.`);
+      return;
+    }
+
+    const numericWeight = Number(weight);
+    if (weight === '' || !Number.isFinite(numericWeight) || numericWeight < 1 || numericWeight > 10) {
+      setError('Weight must be a number between 1 and 10.');
+      return;
+    }
+
     const newBranch: Branch = {
       id: Date.now().toString(),
-      name: name.trim(),
-      weight: parsedWeight
+      name: trimmedName,
+      weight: Math.round(numericWeight)
     };
     
     setBranches([...branches, newBranch]);
     setName('');
     setWeight(1);
+    setError(null);
   };
 
   const handleDelete = (id: string) => {
@@ -42,13 +56,13 @@ export function BranchManager({ branches, setBranches }: Props) {
           <p className="text-xs text-slate-400">Manage stores and their priority rankings (1-10).</p>
         </div>
 
-        <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3 items-end mb-6">
+        <form onSubmit={handleAdd} noValidate className="flex flex-col sm:flex-row gap-3 items-end mb-6">
           <div className="flex-1 w-full">
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Store Name</label>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setError(null); }}
               placeholder="e.g. Downtown Metro"
               className="w-full px-3 py-1.5 bg-[#0f1115] text-slate-100 border border-slate-700 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
               required
@@ -61,7 +75,7 @@ export function BranchManager({ branches, setBranches }: Props) {
               min="1"
               max="10"
               value={weight}
-              onChange={(e) => setWeight(e.target.value)}
+              onChange={(e) => { setWeight(e.target.value); setError(null); }}
               className="w-full px-3 py-1.5 bg-[#0f1115] text-slate-100 border border-slate-700 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
               required
             />
@@ -74,6 +88,12 @@ export function BranchManager({ branches, setBranches }: Props) {
             Add Branch
           </button>
         </form>
+
+        {error && (
+          <div className="-mt-3 p-3 bg-red-950/20 text-red-400 rounded border border-red-900/50 text-xs">
+            {error}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col min-h-0 bg-[#1a1d23] border border-slate-800 rounded overflow-hidden">
